@@ -29,9 +29,10 @@
         <joint name="joint5" value="0.8107"/>
         <joint name="joint6" value="0"/>
     </group_state>
-    <!--END EFFECTOR: Purpose: Represent information about an end effector.-->
+    <!--END EFFECTOR: 当前没有夹爪模型，等以后加 gripper 规划组后再定义
     <end_effector name="hand" parent_link="tool0" group="" parent_group="arm_6axises"/>
-    <!--VIRTUAL JOINT: Purpose: this element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
+    -->
+    <!--VIRTUAL JOINT: Purpose: This element defines a virtual joint between a robot link and an external frame of reference (considered fixed with respect to the robot)-->
     <virtual_joint name="Virtual_Joint_base_world" type="fixed" parent_frame="world" child_link="base_link"/>
     <!--DISABLE COLLISIONS: By default it is assumed that any link of the robot could potentially come into collision with any other link in the robot. This tag disables collision checking between a specified pair of links. -->
     <disable_collisions link1="base_link" link2="link1" reason="Adjacent"/>

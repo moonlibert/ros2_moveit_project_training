@@ -1,6 +1,7 @@
 // 阶段1：命名姿态控制
 // 在 SRDF 里预定义的两个姿态 home / ready 之间来回切换
 #include <memory>
+#include <thread>
 
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.hpp>
@@ -9,6 +10,11 @@ int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
   auto node = std::make_shared<rclcpp::Node>("named_target_node");
+
+  // Jazzy 起需要用户自己 spin 节点，订阅/反馈回调才能执行
+  auto executor = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+  executor->add_node(node);
+  std::thread spin_thread([executor]() { executor->spin(); });
 
   // MoveGroupInterface 是 C++ 操作机械臂的主入口。
   // 构造时传入节点 + 规划组名字（必须和 SRDF 里的 <group name="..."> 完全一致）。
@@ -39,6 +45,8 @@ int main(int argc, char** argv)
     move_group.execute(plan);
   }
 
+  executor->cancel();
+  spin_thread.join();
   rclcpp::shutdown();
   return 0;
 }

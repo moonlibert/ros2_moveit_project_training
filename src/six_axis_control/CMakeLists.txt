@@ -10,6 +10,10 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_core REQUIRED)
+find_package(geometry_msgs REQUIRED)
+
+# 暴露 include/ 目录，让源码能 #include "six_axis_control/xxx.hpp"
+include_directories(include)
 
 # ---- 阶段1：命名姿态控制节点 ----
 add_executable(named_target src/named_target_node.cpp)
@@ -27,8 +31,31 @@ ament_target_dependencies(joint_target
   moveit_core
 )
 
-install(TARGETS named_target joint_target
+# ---- 阶段3：OOP 封装库 + 节点 ----
+# arm_controller 编成库，阶段4/5 的节点可直接复用
+add_library(arm_controller_lib src/arm_controller.cpp)
+target_include_directories(arm_controller_lib PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+ament_target_dependencies(arm_controller_lib
+  rclcpp
+  moveit_ros_planning_interface
+  moveit_core
+  geometry_msgs
+)
+
+add_executable(pose_target_oop src/pose_target_oop_node.cpp)
+target_link_libraries(pose_target_oop arm_controller_lib)
+ament_target_dependencies(pose_target_oop rclcpp)
+
+install(TARGETS named_target joint_target pose_target_oop arm_controller_lib
   DESTINATION lib/${PROJECT_NAME}
+)
+
+# 安装头文件，供其他包复用
+install(DIRECTORY include/
+  DESTINATION include
 )
 
 if(BUILD_TESTING)
