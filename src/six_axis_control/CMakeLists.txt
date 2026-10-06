@@ -11,6 +11,8 @@ find_package(rclcpp REQUIRED)
 find_package(moveit_ros_planning_interface REQUIRED)
 find_package(moveit_core REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(moveit_msgs REQUIRED)
+find_package(shape_msgs REQUIRED)
 
 # 暴露 include/ 目录，让源码能 #include "six_axis_control/xxx.hpp"
 include_directories(include)
@@ -43,13 +45,25 @@ ament_target_dependencies(arm_controller_lib
   moveit_ros_planning_interface
   moveit_core
   geometry_msgs
+  moveit_msgs
+  shape_msgs
 )
 
 add_executable(pose_target_oop src/pose_target_oop_node.cpp)
 target_link_libraries(pose_target_oop arm_controller_lib)
 ament_target_dependencies(pose_target_oop rclcpp)
 
-install(TARGETS named_target joint_target pose_target_oop arm_controller_lib
+# ---- 阶段4：笛卡尔直线节点 ----
+add_executable(cartesian src/cartesian_node.cpp)
+target_link_libraries(cartesian arm_controller_lib)
+ament_target_dependencies(cartesian rclcpp)
+
+# ---- 阶段5：避障节点 ----
+add_executable(obstacle src/obstacle_node.cpp)
+target_link_libraries(obstacle arm_controller_lib)
+ament_target_dependencies(obstacle rclcpp geometry_msgs)
+
+install(TARGETS named_target joint_target pose_target_oop cartesian obstacle arm_controller_lib
   DESTINATION lib/${PROJECT_NAME}
 )
 
