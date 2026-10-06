@@ -1,0 +1,121 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="simple_arm">
+
+  <!-- ========== 可调参数（改这里就能改机械臂尺寸） ========== -->
+  <xacro:property name="base_radius"  value="0.08"/>
+  <xacro:property name="base_height"  value="0.05"/>
+  <xacro:property name="link1_height" value="0.15"/>  <!-- 立柱 -->
+  <xacro:property name="link2_length" value="0.25"/>  <!-- 大臂 -->
+  <xacro:property name="link3_length" value="0.20"/>  <!-- 小臂 -->
+  <xacro:property name="link4_length" value="0.10"/>  <!-- 腕部 -->
+
+  <!-- ========== 颜色 ========== -->
+  <material name="grey">
+    <color rgba="0.5 0.5 0.5 1.0"/>
+  </material>
+  <material name="orange">
+    <color rgba="0.9 0.4 0.1 1.0"/>
+  </material>
+
+  <!-- ========== 连杆宏 ==========
+       link 原点 = 底端关节处；圆柱/碰撞/质心全部沿 +z 偏移 length/2，
+       即连杆从关节处向上伸出，关节轴在端点（正确惯例）。 ========== -->
+  <xacro:macro name="arm_link" params="name radius length mass color">
+    <link name="${name}">
+      <visual>
+        <origin xyz="0 0 ${length/2}"/>
+        <geometry>
+          <cylinder radius="${radius}" length="${length}"/>
+        </geometry>
+        <material name="${color}"/>
+      </visual>
+      <collision>
+        <origin xyz="0 0 ${length/2}"/>
+        <geometry>
+          <cylinder radius="${radius}" length="${length}"/>
+        </geometry>
+      </collision>
+      <inertial>
+        <origin xyz="0 0 ${length/2}"/>
+        <mass value="${mass}"/>
+        <inertia
+          ixx="${mass * (3*radius**2 + length**2) / 12}"
+          ixy="0.0" ixz="0.0"
+          iyy="${mass * (3*radius**2 + length**2) / 12}"
+          iyz="0.0"
+          izz="${mass * radius**2 / 2}"/>
+      </inertial>
+    </link>
+  </xacro:macro>
+
+  <!-- ========== 底座（独立：几何中心就在 base_link 原点） ========== -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_height}"/>
+      </geometry>
+      <material name="grey"/>
+    </visual>
+    <collision>
+      <geometry>
+        <cylinder radius="${base_radius}" length="${base_height}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="2.0"/>
+      <inertia
+        ixx="${2.0 * (3*base_radius**2 + base_height**2) / 12}" ixy="0.0" ixz="0.0"
+        iyy="${2.0 * (3*base_radius**2 + base_height**2) / 12}" iyz="0.0"
+        izz="${2.0 * base_radius**2 / 2}"/>
+    </inertial>
+  </link>
+
+  <!-- ========== 关节1：腰部旋转（绕 z 轴），位于底座顶面 ========== -->
+  <joint name="joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 ${base_height/2}"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="${-pi}" upper="${pi}" effort="100" velocity="1.0"/>
+  </joint>
+  <xacro:arm_link name="link1" radius="0.045" length="${link1_height}" mass="1.0" color="orange"/>
+
+  <!-- ========== 关节2：肩部俯仰（绕 y 轴），位于立柱顶端 ========== -->
+  <joint name="joint2" type="revolute">
+    <parent link="link1"/>
+    <child link="link2"/>
+    <origin xyz="0 0 ${link1_height}"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="${-pi/2}" upper="${pi/2}" effort="100" velocity="1.0"/>
+  </joint>
+  <xacro:arm_link name="link2" radius="0.04" length="${link2_length}" mass="0.8" color="grey"/>
+
+  <!-- ========== 关节3：肘部俯仰（绕 y 轴），位于大臂顶端 ========== -->
+  <joint name="joint3" type="revolute">
+    <parent link="link2"/>
+    <child link="link3"/>
+    <origin xyz="0 0 ${link2_length}"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="${-2*pi/3}" upper="${2*pi/3}" effort="100" velocity="1.0"/>
+  </joint>
+  <xacro:arm_link name="link3" radius="0.035" length="${link3_length}" mass="0.5" color="orange"/>
+
+  <!-- ========== 关节4：腕部俯仰（绕 y 轴），位于小臂顶端 ========== -->
+  <joint name="joint4" type="revolute">
+    <parent link="link3"/>
+    <child link="link4"/>
+    <origin xyz="0 0 ${link3_length}"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="${-pi/2}" upper="${pi/2}" effort="50" velocity="1.0"/>
+  </joint>
+  <xacro:arm_link name="link4" radius="0.03" length="${link4_length}" mass="0.3" color="grey"/>
+
+  <!-- ========== 末端法兰（固定关节，作为 TCP 工具点） ========== -->
+  <joint name="joint_tool" type="fixed">
+    <parent link="link4"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 ${link4_length}"/>
+  </joint>
+  <link name="tool0"/>
+
+</robot>
